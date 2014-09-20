@@ -15,10 +15,13 @@ proof of concept implementation
 
 """
 
+from fractions import Fraction
+
 import numpy as np
 from scipy.io import wavfile
 from scipy.signal import blackmanharris
 from scipy.fftpack import fft
+
 import pyolus # see my github repo, or comment it out here and below
 
 # I didn't want to blow up the repository size - just let me know
@@ -36,10 +39,11 @@ notes = ( # first sample, difference in half tones to a1
     (10151935,  15), # c3
     (11364106,  21), # fis3
 )
-length = 2**18 # number of samples for analysis, 2**n for fft
-feet_num = 4.  # this is a 4' stop
-feet_den = 1.  # e.g. 2 2/3' would be feet_num, feet_den = 8., 3.
-a1 = 440       # reference for converting half tones to frequencies
+length = 2**18       # number of samples for analysis, 2**n for fft
+feet = Fraction('4') # this is a 4' stop
+                     # e.g. 2 2/3' would be feet = 2 + Fraction('2/3')
+                     # or just Fraction('8/3')
+a1 = 440             # reference for converting half tones to frequencies
 
 # read the whole wav file
 # in this case, fs = 96000Hz, the file is 16 bit mono
@@ -61,7 +65,7 @@ for n_i, note in enumerate(notes):
     spec = 20 * np.log10(np.abs(fft(signal)))
 
     # rough frequency estimator, assuming equal temperament
-    freq = a1 * 2**(halftones/12.) * 8. / feet_num * feet_den
+    freq = a1 * 2**(halftones/12.) * 8. / feet
 
     # fft bin number corresponding to the frequency estimator
     x0 = int(freq * length / fs)
@@ -91,7 +95,7 @@ for n_i, note in enumerate(notes):
 # write the Aeolus stop file
 reg.stopname = "(11) Okt. 4'"
 reg.filename = '11-okt.ae0'
-reg.fn = int(8 * feet_den)
-reg.fd = int(feet_num)
+reg.fn = (8 / feet).numerator
+reg.fd = (8 / feet).denominator
 reg.save('.')
 
