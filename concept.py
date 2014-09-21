@@ -79,7 +79,6 @@ def run():
     # write the Aeolus stop file
     reg.save('.')
 
-
 def analyse_note(signal, fs, freq):
     # window, fft and dB conversion
     spec = 20 * np.log10(np.abs(fft(signal * blackmanharris(len(signal)))))
@@ -92,17 +91,21 @@ def analyse_note(signal, fs, freq):
 
     # iterate over max. 64 harmonics
     for i in range(1, 65):
-        x_left  =  i * x0 - dx
-        x_right =  i * x0 + dx
-        if x_right > len(spec) / 2:
-            # the spectrum is symmetric - stop in the middle
-            break
-
-        # this is the peak within our window
-        xmax = x_left + np.argmax(spec[x_left:x_right])
-        ymax = spec[xmax]
-
+        xmax, ymax = find_peak(spec, x0, dx, i)
         yield i, xmax, ymax
+
+def find_peak(spec, x0, dx, n):
+    x_left  =  n * x0 - dx
+    x_right =  n * x0 + dx
+    if x_right > len(spec) / 2:
+        # the spectrum is symmetric - stop in the middle
+        raise StopIteration('end of useful spectrum')
+
+    # this is the peak within our window
+    xmax = x_left + np.argmax(spec[x_left:x_right])
+    ymax = spec[xmax]
+
+    return xmax, ymax
 
 if __name__ == '__main__':
     run()
