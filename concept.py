@@ -95,6 +95,14 @@ def analyse_note(signal, fs, freq):
         yield i, xmax, ymax
 
 def find_peak(spec, x0, dx, n):
+    """find the n-th peak position and value in the spectrum
+
+    :param spec: the spectrum, usually a numpy array from an fft
+    :param x0: rough position of the fundamental frequency
+    :param dx: half the window width
+    :param n: number of the harmonic to find
+    :returns index of the peak position in spec and peak value
+    """
     x_left  =  n * x0 - dx
     x_right =  n * x0 + dx
     if x_right > len(spec) / 2:
