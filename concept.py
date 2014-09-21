@@ -24,7 +24,6 @@ from scipy.fftpack import fft
 
 import pyolus # see my github repo, or comment it out here and below
 
-length = 2**18 # number of samples for analysis, 2**n for fft
 
 def run():
     # I didn't want to blow up the repository size - just let me know
@@ -42,6 +41,7 @@ def run():
         (10151935,  15), # c3
         (11364106,  21), # fis3
     )
+    length = 2**18       # number of samples for analysis, 2**n for fft
     feet = Fraction('4') # this is a 4' stop
                          # e.g. 2 2/3' would be feet = 2 + Fraction('2/3')
                          # or just Fraction('8/3')
@@ -81,10 +81,10 @@ def run():
 
 def analyse_note(signal, fs, freq):
     # window, fft and dB conversion
-    spec = 20 * np.log10(np.abs(fft(signal * blackmanharris(length))))
+    spec = 20 * np.log10(np.abs(fft(signal * blackmanharris(len(signal)))))
 
     # fft bin number corresponding to the frequency estimator
-    x0 = int(freq * length / fs)
+    x0 = int(freq * len(spec) / fs)
 
     # window size
     dx = x0 / 5
@@ -93,7 +93,7 @@ def analyse_note(signal, fs, freq):
     for i in range(1, 65):
         x_left  =  i * x0 - dx
         x_right =  i * x0 + dx
-        if x_right > length / 2:
+        if x_right > len(spec) / 2:
             # the spectrum is symmetric - stop in the middle
             break
 
