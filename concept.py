@@ -73,6 +73,7 @@ def run():
         print halftones, freq
 
         for h_i, xmax, ymax in analyse_note(signal, fs, freq):
+            print h_i, xmax, ymax, xmax / float(h_i)
             reg.h_lev.setv(h_i-1, n_i, ymax-180)
     
     # write the Aeolus stop file
@@ -101,7 +102,6 @@ def analyse_note(signal, fs, freq):
         xmax = x_left + np.argmax(spec[x_left:x_right])
         ymax = spec[xmax]
 
-        print i, i * x0, xmax, xmax / float(i), ymax
         yield i, xmax, ymax
 
 if __name__ == '__main__':
