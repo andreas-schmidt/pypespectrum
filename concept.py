@@ -24,57 +24,70 @@ from scipy.fftpack import fft
 
 import pyolus # see my github repo, or comment it out here and below
 
-# I didn't want to blow up the repository size - just let me know
-# if you need data to experiment with
-recording = 'data/11-oktave-4.wav'
-notes = ( # first sample, difference in half tones to a1
-    (  432918, -33), # C
-    ( 1493568, -27), # Fis
-    ( 2586687, -21), # c
-    ( 3809681, -15), # fis
-    ( 5130082,  -9), # c1
-    ( 6407191,  -3), # fis1
-    ( 7716769,   3), # c2
-    ( 8869472,   9), # fis2
-    (10151935,  15), # c3
-    (11364106,  21), # fis3
-)
-length = 2**18       # number of samples for analysis, 2**n for fft
-feet = Fraction('4') # this is a 4' stop
-                     # e.g. 2 2/3' would be feet = 2 + Fraction('2/3')
-                     # or just Fraction('8/3')
-a1 = 440             # reference for converting half tones to frequencies
+length = 2**18 # number of samples for analysis, 2**n for fft
 
-# read the whole wav file
-# in this case, fs = 96000Hz, the file is 16 bit mono
-fs, data = wavfile.read(recording)
+def run():
+    # I didn't want to blow up the repository size - just let me know
+    # if you need data to experiment with
+    recording = 'data/11-oktave-4.wav'
+    notes = ( # first sample, difference in half tones to a1
+        (  432918, -33), # C
+        ( 1493568, -27), # Fis
+        ( 2586687, -21), # c
+        ( 3809681, -15), # fis
+        ( 5130082,  -9), # c1
+        ( 6407191,  -3), # fis1
+        ( 7716769,   3), # c2
+        ( 8869472,   9), # fis2
+        (10151935,  15), # c3
+        (11364106,  21), # fis3
+    )
+    feet = Fraction('4') # this is a 4' stop
+                         # e.g. 2 2/3' would be feet = 2 + Fraction('2/3')
+                         # or just Fraction('8/3')
+    a1 = 440             # reference for converting half tones to frequencies
+    
+    # read the whole wav file
+    # in this case, fs = 96000Hz, the file is 16 bit mono
+    fs, data = wavfile.read(recording)
+    
+    # Aeolus stop definition
+    reg = pyolus.Addsynth()
+    reg.stopname = "(11) Okt. 4'"
+    reg.filename = '11-okt.ae0'
+    reg.fn = (8 / feet).numerator
+    reg.fd = (8 / feet).denominator
+    
+    # loop over notes defined above
+    for n_i, note in enumerate(notes):
+        # parameter unpacking
+        first_sample, halftones = note
 
-# Aeolus stop definition
-reg = pyolus.Addsynth()
+        # find signal portion
+        signal = data[first_sample:first_sample + length]
 
-# loop over notes defined above
-for n_i, note in enumerate(notes):
-    # parameter unpacking
-    first_sample, halftones = note
+        # rough frequency estimator, assuming equal temperament
+        freq = a1 * 2**(halftones / 12.) * 8. / feet
 
-    # find signal portion
-    signal = data[first_sample:first_sample + length]
+        print
+        print halftones, freq
 
+        for h_i, xmax, ymax in analyse_note(signal, fs, freq):
+            reg.h_lev.setv(h_i-1, n_i, ymax-180)
+    
+    # write the Aeolus stop file
+    reg.save('.')
+
+
+def analyse_note(signal, fs, freq):
     # window, fft and dB conversion
-    signal *= blackmanharris(length)
-    spec = 20 * np.log10(np.abs(fft(signal)))
-
-    # rough frequency estimator, assuming equal temperament
-    freq = a1 * 2**(halftones/12.) * 8. / feet
+    spec = 20 * np.log10(np.abs(fft(signal * blackmanharris(length))))
 
     # fft bin number corresponding to the frequency estimator
     x0 = int(freq * length / fs)
 
     # window size
     dx = x0 / 5
-
-    print
-    print halftones, freq
 
     # iterate over max. 64 harmonics
     for i in range(1, 65):
@@ -88,14 +101,8 @@ for n_i, note in enumerate(notes):
         xmax = x_left + np.argmax(spec[x_left:x_right])
         ymax = spec[xmax]
 
-        # do something with the values
         print i, i * x0, xmax, xmax / float(i), ymax
-        reg.h_lev.setv(i-1, n_i, ymax-180)
+        yield i, xmax, ymax
 
-# write the Aeolus stop file
-reg.stopname = "(11) Okt. 4'"
-reg.filename = '11-okt.ae0'
-reg.fn = (8 / feet).numerator
-reg.fd = (8 / feet).denominator
-reg.save('.')
-
+if __name__ == '__main__':
+    run()
