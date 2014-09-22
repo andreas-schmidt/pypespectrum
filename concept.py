@@ -57,12 +57,13 @@ def run(recording, notes, length, feet, a1):
     # write the Aeolus stop file
     reg.save('.')
 
-def analyse_note(signal, fs, freq):
+def analyse_note(signal, fs, freq, n_partials=64):
     """Find position and magnitude of the harmonic partials in the signal.
 
     :param signal: audio data, usually a numpy array
     :param fs: sampling frequency
     :param freq: a rough estimate of the fundamental frequency
+    :param n_partials: maximum number of partial harmonics
     :returns: iterator on index, position and magnitude of the harmonics
     """
     # window, fft and dB conversion
@@ -74,8 +75,8 @@ def analyse_note(signal, fs, freq):
     # window size
     dx = x0 / 5
 
-    # iterate over max. 64 harmonics
-    for i in range(1, 65):
+    # iterate over harmonics
+    for i in range(1, n_partials + 1):
         xmax, ymax = find_peak(spec, x0, dx, i)
         yield i, xmax, ymax
 
